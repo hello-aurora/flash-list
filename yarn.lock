@@ -5420,10 +5420,10 @@ lodash.merge@^4.6.2:
   resolved "https://registry.yarnpkg.com/lodash.merge/-/lodash.merge-4.6.2.tgz#558aa53b43b661e1925a0afdfa36a9a1085fe57a"
   integrity sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==
 
-lodash.throttle@^4.1.1:
+lodash.throttle@4.1.1, lodash.throttle@^4.1.1:
   version "4.1.1"
-  resolved "https://registry.yarnpkg.com/lodash.throttle/-/lodash.throttle-4.1.1.tgz#c23e91b710242ac70c37f1e1cda9274cc39bf2f4"
-  integrity sha1-wj6RtxAkKscMN/HhzaknTMOb8vQ=
+  resolved "https://registry.npmjs.org/lodash.throttle/-/lodash.throttle-4.1.1.tgz#c23e91b710242ac70c37f1e1cda9274cc39bf2f4"
+  integrity sha512-wIkUCfVKpVsWo3JSZlc+8MB5it+2AN5W8J7YVMST30UrvcQNZ1Okbj+rbVniijTWE6FGYy4XJq/rHkas8qJMLQ==
 
 lodash.without@^4.4.0:
   version "4.4.0"
@@ -6547,12 +6547,13 @@ recast@^0.21.0:
     source-map "~0.6.1"
     tslib "^2.0.1"
 
-recyclerlistview@4.2.1:
-  version "4.2.1"
-  resolved "https://registry.yarnpkg.com/recyclerlistview/-/recyclerlistview-4.2.1.tgz#4537a0959400cdce1df1f38d26aab823786e9b13"
-  integrity sha512-NtVYjofwgUCt1rEsTp6jHQg/47TWjnO92TU2kTVgJ9wsc/ely4HnizHHa+f/dI7qaw4+zcSogElrLjhMltN2/g==
+"recyclerlistview@npm:@hello-aurora/recyclerlistview@4.2.2":
+  version "4.2.2"
+  resolved "https://registry.npmjs.org/@hello-aurora/recyclerlistview/-/recyclerlistview-4.2.2.tgz#0df1c3ecd09c4c90bdc818500c49f648ff21d773"
+  integrity sha512-IjgMOyeKd1xsFQ9sbUQRgnYiZT9FU6NnwygNlVRBWh8tAIpiNA2dYN6jsFjxqEzrUrqMCmn069bntdnrPiDgEA==
   dependencies:
     lodash.debounce "4.0.8"
+    lodash.throttle "4.1.1"
     prop-types "15.8.1"
     ts-object-utils "0.0.5"
 

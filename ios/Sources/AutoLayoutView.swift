@@ -8,9 +8,12 @@ import UIKit
     #if RCT_NEW_ARCH_ENABLED
     @objc public var onBlankAreaEventHandler: ((CGFloat, CGFloat) -> Void)?
     #endif
-    
+
     @objc(onBlankAreaEvent)
     var onBlankAreaEvent: RCTDirectEventBlock?
+
+    @objc(onAutoLayout)
+    var onAutoLayout: RCTDirectEventBlock?
 
     @objc public func setHorizontal(_ horizontal: Bool) {
         self.horizontal = horizontal
@@ -32,8 +35,24 @@ import UIKit
         self.enableInstrumentation = enableInstrumentation
     }
 
+    @objc func setEnableAutoLayoutInfo(_ enableAutoLayoutInfo: Bool) {
+        self.enableAutoLayoutInfo = enableAutoLayoutInfo
+    }
+
     @objc public func setDisableAutoLayout(_ disableAutoLayout: Bool) {
         self.disableAutoLayout = disableAutoLayout
+    }
+
+    @objc func setAutoLayoutId(_ autoLayoutId: Int) {
+        self.autoLayoutId = autoLayoutId
+    }
+
+    @objc func setPreservedIndex(_ preservedIndex: Int) {
+        self.preservedIndex = preservedIndex
+    }
+
+    @objc func setRenderId(_ renderId: Int) {
+    	setNeedsLayout()
     }
 
     private var horizontal = false
@@ -41,7 +60,10 @@ import UIKit
     private var windowSize: CGFloat = 0
     private var renderAheadOffset: CGFloat = 0
     private var enableInstrumentation = false
+    private var enableAutoLayoutInfo = false
     private var disableAutoLayout = false
+    private var preservedIndex = -1
+    private var autoLayoutId = -1
 
     /// Tracks where the last pixel is drawn in the overall
     private var lastMaxBoundOverall: CGFloat = 0
@@ -51,8 +73,8 @@ import UIKit
     private var lastMinBound: CGFloat = 0
 
     override public func layoutSubviews() {
-        fixLayout()
         super.layoutSubviews()
+        fixLayout()
 
         guard enableInstrumentation, let scrollView = getScrollView() else { return }
 
@@ -72,7 +94,7 @@ import UIKit
             distanceFromWindowStart: distanceFromWindowStart,
             distanceFromWindowEnd: distanceFromWindowEnd
         )
-        
+
         #if RCT_NEW_ARCH_ENABLED
         onBlankAreaEventHandler?(blankOffsetStart, blankOffsetEnd)
         #else
@@ -110,6 +132,10 @@ import UIKit
             .sorted(by: { $0.index < $1.index })
         clearGaps(for: cellContainers)
         fixFooter()
+
+    	if enableAutoLayoutInfo {
+            emitAutoLayout(for: cellContainers)
+    	}
     }
 
     /// Checks for overlaps or gaps between adjacent items and then applies a correction.
@@ -120,7 +146,48 @@ import UIKit
         var maxBoundNextCell: CGFloat = 0
         let correctedScrollOffset = scrollOffset - (horizontal ? frame.minX : frame.minY)
         lastMaxBoundOverall = 0
-        cellContainers.indices.dropLast().forEach { index in
+        var preservedOffset: Int = 0
+
+        if preservedIndex > -1 {
+            if preservedIndex <= cellContainers[0].index {
+                preservedOffset = 0
+            }
+            else if preservedIndex >= cellContainers[cellContainers.count - 1].index {
+                preservedOffset = cellContainers.count - 1
+            }
+            else {
+                for index in 1..<(cellContainers.count - 1) {
+                    if cellContainers[index].index == preservedIndex {
+                        preservedOffset = index
+                        break
+                    }
+                }
+            }
+        }
+
+        if preservedOffset > 0 {
+            for index in (1..<preservedOffset + 1).reversed() {
+                let cellContainer = cellContainers[index]
+                let cellTop = cellContainer.frame.minY
+
+                let nextCell = cellContainers[index - 1]
+
+                // Only apply correction if the next cell is consecutive.
+                let isNextCellConsecutive = cellContainer.index == nextCell.index + 1
+
+                if isNextCellConsecutive {
+                    nextCell.frame.origin.y = cellTop - nextCell.frame.height
+                }
+            }
+            // this implementation essentially ignores visibility; this will cause onBlankAreaEvent of preserveVisiblePosition
+            // to be inconsistent with flash list without preserveVisiblePosition
+            minBound = cellContainers[0].frame.minY
+            maxBoundNextCell = cellContainers[preservedOffset].frame.maxY
+
+            updateLastMaxBoundOverall(currentCell: cellContainers[0], nextCell: cellContainers[preservedOffset])
+        }
+
+        for index in preservedOffset..<(cellContainers.count - 1) {
             let cellContainer = cellContainers[index]
             let cellTop = cellContainer.frame.minY
             let cellBottom = cellContainer.frame.maxY
@@ -133,29 +200,33 @@ import UIKit
 
 			// Only apply correction if the next cell is consecutive.
 			let isNextCellConsecutive = nextCell.index == cellContainer.index + 1
-			
-			let isCellVisible = isWithinBounds(
-				cellContainer,
-				scrollOffset: correctedScrollOffset,
-				renderAheadOffset: renderAheadOffset,
-				windowSize: windowSize,
-				isHorizontal: horizontal
-			)
-			let isNextCellVisible = isWithinBounds(
-				nextCell,
-				scrollOffset: correctedScrollOffset,
-				renderAheadOffset: renderAheadOffset,
-				windowSize: windowSize,
-				isHorizontal: horizontal
-			)
+
+			let isCellVisible =
+                (preservedIndex > -1) ||
+                isWithinBounds(
+                    cellContainer,
+                    scrollOffset: correctedScrollOffset,
+                    renderAheadOffset: renderAheadOffset,
+                    windowSize: windowSize,
+                    isHorizontal: horizontal
+                )
+
+			let isNextCellVisible =
+                (preservedIndex > -1) ||
+                isWithinBounds(
+                    nextCell,
+                    scrollOffset: correctedScrollOffset,
+                    renderAheadOffset: renderAheadOffset,
+                    windowSize: windowSize,
+                    isHorizontal: horizontal
+                )
 
             guard
                 isCellVisible || isNextCellVisible
             else {
                 updateLastMaxBoundOverall(currentCell: cellContainer, nextCell: nextCell)
-                return
+                continue
             }
-           
 
             if horizontal {
                 maxBound = max(maxBound, cellRight)
@@ -290,5 +361,16 @@ import UIKit
         #endif
 
         return parentSubviews?.first(where:{($0 as? CellContainerComponentView)?.index == -1})
+    }
+
+    private func emitAutoLayout(for cellContainers: [CellContainer]) {
+        let autoRenderedLayouts: [String: Any] = [
+            "autoLayoutId": autoLayoutId,
+            "layouts": cellContainers.map {
+                [ "key": $0.index, "y": $0.frame.origin.y, "height": $0.frame.height ]
+            },
+        ]
+
+        onAutoLayout?(autoRenderedLayouts)
     }
 }
