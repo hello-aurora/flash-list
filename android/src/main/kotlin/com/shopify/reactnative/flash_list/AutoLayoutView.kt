@@ -2,8 +2,6 @@ package com.shopify.reactnative.flash_list
 
 import android.content.Context
 import android.graphics.Canvas
-import android.util.DisplayMetrics
-import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.HorizontalScrollView
@@ -14,9 +12,7 @@ import com.facebook.react.bridge.WritableArray
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.uimanager.UIManagerHelper
 import com.facebook.react.uimanager.events.EventDispatcher
-import com.facebook.react.uimanager.events.RCTEventEmitter
 import com.facebook.react.views.view.ReactViewGroup
-
 
 /** Container for all RecyclerListView children. This will automatically remove all gaps and overlaps for GridLayouts with flexible spans.
  * Note: This cannot work for masonry layouts i.e, pinterest like layout */
@@ -27,7 +23,6 @@ class AutoLayoutView(context: Context) : ReactViewGroup(context) {
     var disableAutoLayout = false
     var autoLayoutId = -1
     var preservedIndex = -1
-
     var pixelDensity = 1.0;
 
     /** Overriding draw instead of onLayout. RecyclerListView uses absolute positions for each and every item which means that changes in child layouts may not trigger onLayout on this container. The same layout
@@ -164,24 +159,30 @@ class AutoLayoutView(context: Context) : ReactViewGroup(context) {
         }
     }
 
-    /** TODO: Check migration to Fabric */
     private fun emitAutoLayout(sortedItems: Array<CellContainer>) {
-        val event: WritableMap = Arguments.createMap()
-        event.putInt("autoLayoutId", autoLayoutId)
+        val eventDispatcher: EventDispatcher? =
+            UIManagerHelper.getEventDispatcherForReactTag(context as ReactContext, id)
 
-        val layoutsArray: WritableArray = Arguments.createArray()
-        for (cell in sortedItems) {
-            val cellMap: WritableMap = Arguments.createMap()
-            cellMap.putInt("key", cell.index)
-            cellMap.putDouble("y", cell.top / pixelDensity)
-            cellMap.putDouble("height", cell.height / pixelDensity)
-            layoutsArray.pushMap(cellMap)
-	    }
-        event.putArray("layouts", layoutsArray)
+        if (eventDispatcher != null) {
+            val surfaceId = UIManagerHelper.getSurfaceId(context as ReactContext)
+            val layoutsArray: WritableArray = Arguments.createArray()
 
-        val reactContext = context as ReactContext
-        reactContext
-                .getJSModule(RCTEventEmitter::class.java)
-                .receiveEvent(id, "onAutoLayout", event)
+            for (cell in sortedItems) {
+                val cellMap: WritableMap = Arguments.createMap()
+                cellMap.putInt("key", cell.index)
+                cellMap.putDouble("y", cell.top / pixelDensity)
+                cellMap.putDouble("height", cell.height / pixelDensity)
+                layoutsArray.pushMap(cellMap)
+            }
+
+            eventDispatcher.dispatchEvent(
+                AutoLayoutEvent(
+                    surfaceId,
+                    viewTag = id,
+                    autoLayoutId = autoLayoutId,
+                    layouts = layoutsArray
+                )
+            )
+        }
     }
 }

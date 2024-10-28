@@ -363,7 +363,7 @@ import UIKit
         return parentSubviews?.first(where:{($0 as? CellContainerComponentView)?.index == -1})
     }
 
-    private func emitAutoLayout(for cellContainers: [CellContainer]) {
+    private func emitAutoLayout(for cellContainers: [CellContainerComponentView]) {
         let autoRenderedLayouts: [String: Any] = [
             "autoLayoutId": autoLayoutId,
             "layouts": cellContainers.map {

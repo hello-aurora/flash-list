@@ -45,7 +45,7 @@ class AutoLayoutShadow {
                 val neighbour = sortedItems[i - 1]
 
                 // Only apply correction if the next cell is consecutive.
-                val isNeighbourConsecutive = cell.index == neighbour.index  1
+                val isNeighbourConsecutive = cell.index == neighbour.index + 1
 
                 if (isNeighbourConsecutive) {
                     neighbour.top = cell.top - neighbour.height

@@ -46,12 +46,12 @@ class AutoLayoutViewManager: ViewGroupManager<AutoLayoutView>(), AutoLayoutViewM
     }
 
     @ReactProp(name = "autoLayoutId")
-    override fun setAutoLayoutId(view: AutoLayoutView, autoLayoutId: Int) {
+    fun setAutoLayoutId(view: AutoLayoutView, autoLayoutId: Int) {
         view.autoLayoutId = autoLayoutId
     }
 
     @ReactProp(name = "preservedIndex")
-    override fun setPreservedIndex(view: AutoLayoutView, preservedIndex: Int) {
+    fun setPreservedIndex(view: AutoLayoutView, preservedIndex: Int) {
         view.preservedIndex = preservedIndex
     }
 
@@ -76,7 +76,7 @@ class AutoLayoutViewManager: ViewGroupManager<AutoLayoutView>(), AutoLayoutViewM
     }
 
     @ReactProp(name = "enableAutoLayoutInfo")
-    override fun setEnableAutoLayoutInfo(view: AutoLayoutView, enableAutoLayoutInfo: Boolean) {
+    fun setEnableAutoLayoutInfo(view: AutoLayoutView, enableAutoLayoutInfo: Boolean) {
         view.enableAutoLayoutInfo = enableAutoLayoutInfo
     }
 
